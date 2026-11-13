@@ -224,7 +224,7 @@
 </div>
 <div class="order">
         <h2><span data-fr="Comment commander ?" data-ar="كيفاش تطلب؟">Comment commander ?</span></h2>
-    <ul>
+    <ul id="rulesList">
       <li><span data-fr="Commande 24 à 48 h à l'avance" data-ar="اطلب 24 حتى 48 ساعة قبل">Commande 24 à 48 h à l'avance</span></li>
       <li><span data-fr="Tous les California peuvent être en version crispy" data-ar="كامل الكاليفورنيا يقدرو يكونو كريسبي">Tous les California peuvent être en version crispy</span></li>
       <li><span data-fr="Takeout only — à emporter uniquement" data-ar="للأخذ فقط — بلا توصيل">Takeout only — à emporter uniquement</span></li>
@@ -280,6 +280,7 @@
 <div class="toast" id="toast"></div>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 function setLang(l){
   document.querySelectorAll('[data-fr]').forEach(function(el){
@@ -359,7 +360,7 @@ function dishById(id){
   for(var j = 0; j < BOXES.length; j++) if(BOXES[j].id === id) return BOXES[j];
   return null;
 }
-function dishImg(d){ return IMG[d.id] || IMG["chou-maki"]; }
+function dishImg(d){ return d.img || IMG[d.id] || IMG["chou-maki"]; }
 function esc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function applyLangTo(el){
   var spans = el.querySelectorAll("[data-fr]");
@@ -660,6 +661,55 @@ document.querySelector(".hero .logo").addEventListener("click", function(){
 renderMenu();
 renderCartBar();
 
+</script>
+<script>
+/* cloud menu: the owner edits (owner.html) update this page automatically */
+(function(){
+  window.fairyCloud = false;
+  if(typeof window.supabase === "undefined") return;
+  var sb = window.supabase.createClient("https://chosrqzpuczmirrxmnkf.supabase.co", "sb_publishable__e-8by0NKHyY-mnRowNtqg_zRr8Fq_q");
+  window.fairySb = sb;
+  function applyDishes(rows){
+    if(!rows || !rows.length) return;
+    var keep = {};
+    DISHES = rows.filter(function(r){ return r.active !== false; }).map(function(r){
+      return {id:r.id, cat:r.cat, fr:r.fr, ar:r.ar, desc:r.ingredients || "", price:r.price, img:r.img || "", sort:r.sort || 0};
+    });
+    DISHES.forEach(function(d){ keep[d.id] = 1; });
+    for(var k in cart){ if(!keep[k] && !BOXES.some(function(b){ return b.id === k; })){ delete cart[k]; } }
+    lsSet("fairy_cart_v1", cart);
+    window.fairyCloud = true;
+    renderMenu(); renderCartBar();
+  }
+  function applySettings(s){
+    if(!s) return;
+    window.fairySettings = s;
+    var ul = document.getElementById("rulesList");
+    if(ul && s.rules_fr){
+      var fr = s.rules_fr.split(/
++/).filter(function(x){ return x.trim(); });
+      var ar = (s.rules_ar || "").split(/
++/).filter(function(x){ return x.trim(); });
+      var html = "";
+      for(var i = 0; i < fr.length; i++){
+        var a = ar[i] || fr[i];
+        html += '<li><span data-fr="' + esc(fr[i]) + '" data-ar="' + esc(a) + '">' + esc(isAr() ? a : fr[i]) + '</span></li>';
+      }
+      if(html) ul.innerHTML = html;
+    }
+    var h1 = document.querySelector(".hero h1");
+    if(h1 && s.shop_name) h1.textContent = s.shop_name;
+  }
+  window.fairyReload = function(){
+    sb.from("fairy_dishes").select("*").order("sort", {ascending:true}).then(function(res){ if(res.data) applyDishes(res.data); }).catch(function(){});
+    sb.from("fairy_settings").select("*").eq("id", 1).maybeSingle().then(function(res){ if(res.data) applySettings(res.data); }).catch(function(){});
+  };
+  window.fairyReload();
+  try{
+    sb.channel("fairy-menu").on("postgres_changes", {event:"*", schema:"public", table:"fairy_dishes"}, function(){ window.fairyReload(); }).subscribe();
+    sb.channel("fairy-settings").on("postgres_changes", {event:"*", schema:"public", table:"fairy_settings"}, function(){ window.fairyReload(); }).subscribe();
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
