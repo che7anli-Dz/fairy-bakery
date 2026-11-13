@@ -670,6 +670,7 @@ document.getElementById("menuGrid").addEventListener("click", function(e){
   var ed = t.closest ? t.closest("[data-edit]") : null;
   if(ed && ownerMode){ e.stopPropagation(); openEdit(ed.getAttribute("data-edit")); return; }
   var cell = t.closest ? t.closest(".mcell") : null;
+  if(cell && ownerMode){ e.stopPropagation(); openEdit(cell.getAttribute("data-id")); return; }
   if(cell) quickAdd(cell.getAttribute("data-id"));
 });
 var daysEl = document.querySelector(".days"); if(daysEl) daysEl.addEventListener("click", function(e){
