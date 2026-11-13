@@ -610,7 +610,8 @@ function saveDish(){
   toast(isAr() ? "جارٍ الحفظ…" : "Enregistrement…");
   var finish = function(imgUrl){
     var row = {id: rowId, cat:cat, fr: fr || ar, ar: ar || fr, ingredients:desc, price:p, img: imgUrl, sort:sort, active: document.getElementById("addActive").checked};
-    sb.from("fairy_dishes").upsert(row).then(function(res){
+    var cr = ownerCreds() || {};
+    sb.rpc("fairy_upsert_dish", {p_project: cr.project, p_code: cr.code, p_dish: row}).then(function(res){
       if(res.error){ toast("Erreur : " + res.error.message); return; }
       closeOvls(); window.fairyReload();
       toast(isAr() ? "الطبق تسجّل ✅ — تبدل عند الزبائن أوتوماتيك" : "Plat enregistré ✅ — le menu client se met à jour tout seul");
@@ -619,9 +620,11 @@ function saveDish(){
   var file = document.getElementById("addPhoto").files[0];
   if(file){
     var path = rowId + "/" + Date.now() + ".jpg";
-    sb.storage.from("fairy-photos").upload(path, file, {contentType:"image/jpeg", upsert:true}).then(function(res){
-      if(res.error){ toast("Photo : " + res.error.message); finish(document.getElementById("addPhotoPrev").getAttribute("data-url") || ""); return; }
-      finish(sb.storage.from("fairy-photos").getPublicUrl(path).data.publicUrl);
+    resizePhoto(file, function(blob){
+      sb.storage.from("fairy-photos").upload(path, blob, {contentType:"image/jpeg", upsert:true}).then(function(res){
+        if(res.error){ toast("Photo : " + res.error.message); finish(document.getElementById("addPhotoPrev").getAttribute("data-url") || ""); return; }
+        finish(sb.storage.from("fairy-photos").getPublicUrl(path).data.publicUrl);
+      });
     });
   } else finish(document.getElementById("addPhotoPrev").getAttribute("data-url") || "");
 }
@@ -629,7 +632,8 @@ function deleteDish(id){
   if(!confirm(isAr() ? "تمسح هاذ الطبق من المنيو؟" : "Supprimer ce plat du menu ?")) return;
   var sb = window.fairySb;
   if(!sb) return;
-  sb.from("fairy_dishes").delete().eq("id", id).then(function(res){
+  var cr = ownerCreds() || {};
+  sb.rpc("fairy_delete_dish", {p_project: cr.project, p_code: cr.code, p_id: id}).then(function(res){
     if(res.error){ toast("Erreur : " + res.error.message); return; }
     if(cart[id]){ delete cart[id]; lsSet("fairy_cart_v1", cart); }
     window.fairyReload();
@@ -775,13 +779,12 @@ renderCartBar();
 <div class="ovl open" id="loginOvl"><div class="sheet">
   <button type="button" class="x" data-close>×</button>
   <h3 class="popname">👑 Espace propriétaire</h3>
-  <p class="copynote">Connecte-toi pour modifier le menu — chaque changement apparaît tout de suite sur la page des clients.</p>
+  <p class="copynote">Entre le nom du projet et ton code pour modifier le menu — chaque changement apparaît tout de suite sur la page des clients.</p>
   <div style="margin-top:14px">
-    <div class="fld"><label>Email</label><input id="ownEmail" type="email" placeholder="ton@email.com"></div>
-    <div class="fld"><label>Mot de passe</label><input id="ownPass" type="password" placeholder="••••••••"></div>
+    <div class="fld"><label><span data-fr="Nom du projet" data-ar="اسم المشروع">Nom du projet</span></label><input id="ownProject" type="text" placeholder="FAIRY BAKERY"></div>
+    <div class="fld"><label><span data-fr="Code" data-ar="الكود">Code</span></label><input id="ownCode" type="password" placeholder="••••••••"></div>
     <div id="ownErr" class="copybox" style="display:none"></div>
-    <button type="button" class="btn-gold" id="ownLogin">Se connecter</button>
-    <button type="button" class="mreset" id="ownSignup" style="margin-top:10px">Créer mon compte</button>
+    <button type="button" class="btn-gold" id="ownLogin"><span data-fr="Entrer" data-ar="دخول">Entrer</span></button>
     <button type="button" class="mreset" id="ownView" style="margin-top:10px">Voir le menu (sans modifier)</button>
   </div>
 </div></div>
@@ -804,41 +807,40 @@ renderCartBar();
   var loginOvl = document.getElementById("loginOvl");
   function showErr(msg){ var e = document.getElementById("ownErr"); e.style.display = "block"; e.textContent = msg; }
   if(!sb){ showErr("Supabase indisponible — vérifie ta connexion et recharge la page."); return; }
-  function unlock(email){
+  function ownerCreds(){ try{ return JSON.parse(localStorage.getItem("fairy_owner_login") || "null"); }catch(e){ return null; } }
+  function resizePhoto(file, cb){
+    var img = new Image();
+    img.onload = function(){
+      var max = 720, w = img.width, h = img.height;
+      if(w > max){ h = Math.round(h * max / w); w = max; }
+      var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      cv.toBlob(function(b){ cb(b || file); }, "image/jpeg", 0.85);
+    };
+    img.onerror = function(){ cb(file); };
+    img.src = URL.createObjectURL(file);
+  }
+  function unlock(project){
     loginOvl.classList.remove("open");
     ownerMode = true;
     document.getElementById("ownerBar").style.display = "flex";
-    document.getElementById("ownerWho").textContent = email;
+    document.getElementById("ownerWho").textContent = project;
     document.body.style.paddingTop = "40px";
     renderMenu();
     toast(isAr() ? "مرحباً — تقدر تعدل المنيو دروك" : "Bienvenue — tu peux modifier le menu");
   }
-  function checkOwner(email){
-    sb.from("fairy_owners").select("email").eq("email", email).maybeSingle().then(function(res){
-      if(res.data){ unlock(email); }
-      else { showErr("Compte créé, mais pas encore activé — dis à Ismail d'activer ton accès."); }
-    });
-  }
   document.getElementById("ownLogin").addEventListener("click", function(){
-    var email = document.getElementById("ownEmail").value.replace(/^\s+|\s+$/g, "");
-    var pass = document.getElementById("ownPass").value;
-    if(!email || !pass){ showErr("Écris ton email et ton mot de passe."); return; }
-    sb.auth.signInWithPassword({email:email, password:pass}).then(function(res){
+    var project = document.getElementById("ownProject").value.replace(/^\s+|\s+$/g, "");
+    var code = document.getElementById("ownCode").value;
+    if(!project || !code){ showErr("Écris le nom du projet et le code."); return; }
+    sb.rpc("fairy_check_code", {p_project: project, p_code: code}).then(function(res){
       if(res.error){ showErr(res.error.message); return; }
-      checkOwner(email);
-    });
-  });
-  document.getElementById("ownSignup").addEventListener("click", function(){
-    var email = document.getElementById("ownEmail").value.replace(/^\s+|\s+$/g, "");
-    var pass = document.getElementById("ownPass").value;
-    if(!email || pass.length < 6){ showErr("Écris ton email et un mot de passe (6 caractères minimum)."); return; }
-    sb.auth.signUp({email:email, password:pass}).then(function(res){
-      if(res.error){ showErr(res.error.message); return; }
-      showErr("Compte créé ✅ — vérifie ta boîte mail pour confirmer, puis dis à Ismail d'activer ton accès.");
+      if(res.data === true){ localStorage.setItem("fairy_owner_login", JSON.stringify({project: project, code: code})); unlock(project); }
+      else showErr(isAr() ? "الاسم ولا الكود غالط — عاود جرّب" : "Nom ou code incorrect — réessaie.");
     });
   });
   document.getElementById("ownView").addEventListener("click", function(){ loginOvl.classList.remove("open"); });
-  document.getElementById("ownLogout").addEventListener("click", function(){ sb.auth.signOut().then(function(){ location.reload(); }); });
+  document.getElementById("ownLogout").addEventListener("click", function(){ localStorage.removeItem("fairy_owner_login"); location.reload(); });
   document.getElementById("ownClient").addEventListener("click", function(){ window.open("https://che7anli-dz.github.io/fairy-bakery/", "_blank"); });
   document.getElementById("ownSettings").addEventListener("click", function(){
     var s = window.fairySettings || {};
@@ -852,7 +854,8 @@ renderCartBar();
     var row = {id:1, shop_name: document.getElementById("setName").value.replace(/^\s+|\s+$/g, "") || "FAIRY BAKERY",
       instagram: document.getElementById("setIg").value.replace(/^\s+|\s+$/g, "") || "fairy_bakery_",
       rules_fr: document.getElementById("setRulesFr").value, rules_ar: document.getElementById("setRulesAr").value};
-    sb.from("fairy_settings").upsert(row).then(function(res){
+    var cr = ownerCreds() || {};
+    sb.rpc("fairy_upsert_settings", {p_project: cr.project, p_code: cr.code, p_settings: row}).then(function(res){
       if(res.error){ toast("Erreur : " + res.error.message); return; }
       closeOvls(); window.fairyReload();
       toast(isAr() ? "الإعدادات تسجّلت ✅" : "Paramètres enregistrés ✅");
@@ -863,10 +866,8 @@ renderCartBar();
     if(id){ closeOvls(); deleteDish(id); }
   });
   document.querySelectorAll("[data-close]").forEach(function(b){ b.addEventListener("click", closeOvls); });
-  sb.auth.getSession().then(function(res){
-    var u = res.data && res.data.session && res.data.session.user;
-    if(u) checkOwner(u.email);
-  });
+  var saved = ownerCreds();
+  if(saved){ sb.rpc("fairy_check_code", {p_project: saved.project, p_code: saved.code}).then(function(res){ if(res.data === true) unlock(saved.project); }); }
 })();
 </script>
 </body>
