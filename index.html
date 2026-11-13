@@ -199,6 +199,14 @@
   #copyOvl.open .sheet{animation:sheetUp .35s ease both}
   .anim-done #copyOvl.open .sheet{animation:none!important;opacity:1!important;transform:none!important}
 
+
+  .medit{position:absolute;top:-8px;inset-inline-end:-8px;width:24px;height:24px;border-radius:50%;background:#E8A317;color:#241A14;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;z-index:2;line-height:1}
+  .fld textarea{width:100%;border:1px solid #EAD9C8;border-radius:10px;padding:10px;font:inherit;background:#FFFDF9;color:#2E2620}
+  .fld input[type=file]{width:100%;font-size:13px}
+  #ownerBar{position:fixed;top:0;left:0;right:0;z-index:150;background:#241A14;color:#F5E9DC;font-size:13px;padding:8px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+  #ownerBar button{background:#E8A317;color:#241A14;border:0;border-radius:8px;padding:6px 10px;font-weight:700;font-size:12.5px}
+  #ownErr{color:#C0392B;font-size:13.5px}
+
 </style>
 </head>
 <body>
@@ -266,13 +274,18 @@
 
 <div class="ovl" id="addOvl"><div class="sheet">
   <button type="button" class="x" data-close>×</button>
-  <h3 class="popname"><span data-fr="Ajouter un plat" data-ar="زيد طبق">Ajouter un plat</span></h3>
+  <h3 class="popname" id="addTitle"><span data-fr="Ajouter un plat" data-ar="زيد طبق">Ajouter un plat</span></h3>
   <div style="margin-top:14px">
     <div class="fld"><label><span data-fr="Nom (français)" data-ar="الاسم (بالفرنسية)">Nom (français)</span></label><input id="addFr" type="text"></div>
     <div class="fld"><label><span data-fr="Nom (arabe)" data-ar="الاسم (بالعربية)">Nom (arabe)</span></label><input id="addAr" type="text" dir="rtl"></div>
     <div class="fld"><label><span data-fr="Prix (DA) — vide = sur demande" data-ar="السعر (دج) — خليه فارغ = عند الطلب">Prix (DA) — vide = sur demande</span></label><input id="addPrice" type="number" min="0" inputmode="numeric"></div>
     <div class="fld"><label><span data-fr="Catégorie" data-ar="القسم">Catégorie</span></label><select id="addCat"></select></div>
+    <div class="fld"><label><span data-fr="Ingrédients" data-ar="المكونات">Ingrédients</span></label><textarea id="addDesc" rows="2"></textarea></div>
+    <div class="fld"><label><span data-fr="Photo du plat" data-ar="تصويرة الطبق">Photo du plat</span></label><input id="addPhoto" type="file" accept="image/*"><img id="addPhotoPrev" data-url="" style="display:none;max-width:100%;border-radius:10px;margin-top:8px"></div>
+    <div class="fld"><label><input id="addActive" type="checkbox" checked> <span data-fr="Visible dans le menu" data-ar="يبان في المنيو">Visible dans le menu</span></label></div>
+    <input id="addId" type="hidden" value="">
     <button type="button" class="btn-gold" id="addSave"><span data-fr="Enregistrer le plat" data-ar="سجّل الطبق">Enregistrer le plat</span></button>
+    <button type="button" class="mreset" id="addDelete" style="display:none;margin-top:10px"><span data-fr="🗑 Supprimer ce plat" data-ar="🗑 مسح هاذ الطبق">🗑 Supprimer ce plat</span></button>
   </div>
 </div></div>
 
@@ -394,14 +407,13 @@ function renderMenu(){
         + (d.desc ? '<span class="mdesc">' + esc(d.desc) + '</span>' : '')
         + '<span class="mprice">' + esc(priceText(d)) + '</span></span>'
         + '<span class="mplus">+</span>'
-        + (ownerMode ? '<span class="mdel" data-del="' + d.id + '">×</span>' : '')
+        + (ownerMode ? '<span class="medit" data-edit="' + d.id + '">✎</span><span class="mdel" data-del="' + d.id + '">×</span>' : '')
         + '</button>';
     }
     html += '</div>';
   }
   if(ownerMode){
     html += '<button type="button" class="madd" id="addDishBtn"><span data-fr="+ Ajouter un plat" data-ar="+ زيد طبق">+ Ajouter un plat</span></button>';
-    html += '<button type="button" class="mreset" id="resetMenuBtn"><span data-fr="↺ Restaurer le menu d’origine" data-ar="↺ رجّع المنيو الأصلي">↺ Restaurer le menu d’origine</span></button>';
   }
   grid.innerHTML = html;
   applyLangTo(grid);
@@ -547,33 +559,85 @@ function openAdd(){
   var html = "";
   for(var i = 0; i < CATS.length; i++) html += '<option value="' + CATS[i].id + '">' + esc(isAr() ? CATS[i].ar : CATS[i].fr) + '</option>';
   sel.innerHTML = html;
+  document.getElementById("addId").value = "";
+  document.getElementById("addFr").value = "";
+  document.getElementById("addAr").value = "";
+  document.getElementById("addDesc").value = "";
+  document.getElementById("addPrice").value = "";
+  document.getElementById("addPhoto").value = "";
+  document.getElementById("addPhotoPrev").style.display = "none";
+  document.getElementById("addPhotoPrev").setAttribute("data-url", "");
+  document.getElementById("addActive").checked = true;
+  document.getElementById("addDelete").style.display = "none";
+  document.getElementById("addTitle").textContent = isAr() ? "زيد طبق" : "Ajouter un plat";
   document.getElementById("addOvl").classList.add("open");
+}
+function openEdit(id){
+  var d = dishById(id);
+  if(!d) return;
+  openAdd();
+  document.getElementById("addId").value = d.id;
+  document.getElementById("addFr").value = d.fr || "";
+  document.getElementById("addAr").value = d.ar || "";
+  document.getElementById("addDesc").value = d.desc || "";
+  document.getElementById("addPrice").value = (d.price == null ? "" : d.price);
+  document.getElementById("addCat").value = d.cat;
+  document.getElementById("addActive").checked = true;
+  var prev = document.getElementById("addPhotoPrev");
+  prev.src = dishImg(d);
+  prev.style.display = "block";
+  prev.setAttribute("data-url", d.img || "");
+  document.getElementById("addDelete").style.display = "block";
+  document.getElementById("addTitle").textContent = isAr() ? "عدّل الطبق" : "Modifier le plat";
 }
 function saveDish(){
   var fr = document.getElementById("addFr").value.replace(/^\s+|\s+$/g, "");
   var ar = document.getElementById("addAr").value.replace(/^\s+|\s+$/g, "");
   var pr = document.getElementById("addPrice").value.replace(/^\s+|\s+$/g, "");
   var cat = document.getElementById("addCat").value;
+  var desc = document.getElementById("addDesc").value.replace(/^\s+|\s+$/g, "");
+  var id = document.getElementById("addId").value;
   if(!fr && !ar){ toast(isAr() ? "اكتب اسم الطبق" : "Écrivez le nom du plat"); return; }
   var p = pr === "" ? null : parseInt(pr, 10);
   if(p != null && (isNaN(p) || p < 0)) p = null;
-  customDishes.push({id:"c" + Date.now(), cat:cat, fr: fr || ar, ar: ar || fr, price:p});
-  lsSet("fairy_custom_v1", customDishes);
-  document.getElementById("addFr").value = "";
-  document.getElementById("addAr").value = "";
-  document.getElementById("addPrice").value = "";
-  closeOvls();
-  renderMenu();
-  toast(isAr() ? "الطبق تزاد للمنيو" : "Plat ajouté au menu");
+  var sb = window.fairySb;
+  if(!sb){ toast("Supabase indisponible — vérifie ta connexion"); return; }
+  var sort = 0, old = null;
+  for(var i = 0; i < DISHES.length; i++){ if(DISHES[i].cat === cat && (DISHES[i].sort || 0) > sort) sort = DISHES[i].sort || 0; if(DISHES[i].id === id) old = DISHES[i]; }
+  if(old) sort = old.sort || 0; else sort = sort + 1;
+  var rowId = id || ("d" + Date.now());
+  toast(isAr() ? "جارٍ الحفظ…" : "Enregistrement…");
+  var finish = function(imgUrl){
+    var row = {id: rowId, cat:cat, fr: fr || ar, ar: ar || fr, ingredients:desc, price:p, img: imgUrl, sort:sort, active: document.getElementById("addActive").checked};
+    var cr = ownerCreds() || {};
+    sb.rpc("fairy_upsert_dish", {p_project: cr.project, p_code: cr.code, p_dish: row}).then(function(res){
+      if(res.error){ toast("Erreur : " + res.error.message); return; }
+      closeOvls(); window.fairyReload();
+      toast(isAr() ? "الطبق تسجّل ✅ — تبدل عند الزبائن أوتوماتيك" : "Plat enregistré ✅ — le menu client se met à jour tout seul");
+    });
+  };
+  var file = document.getElementById("addPhoto").files[0];
+  if(file){
+    var path = rowId + "/" + Date.now() + ".jpg";
+    resizePhoto(file, function(blob){
+      sb.storage.from("fairy-photos").upload(path, blob, {contentType:"image/jpeg", upsert:true}).then(function(res){
+        if(res.error){ toast("Photo : " + res.error.message); finish(document.getElementById("addPhotoPrev").getAttribute("data-url") || ""); return; }
+        finish(sb.storage.from("fairy-photos").getPublicUrl(path).data.publicUrl);
+      });
+    });
+  } else finish(document.getElementById("addPhotoPrev").getAttribute("data-url") || "");
 }
 function deleteDish(id){
   if(!confirm(isAr() ? "تمسح هاذ الطبق من المنيو؟" : "Supprimer ce plat du menu ?")) return;
-  var idx = -1;
-  for(var i = 0; i < customDishes.length; i++) if(customDishes[i].id === id) idx = i;
-  if(idx >= 0){ customDishes.splice(idx, 1); lsSet("fairy_custom_v1", customDishes); }
-  else { if(hiddenIds.indexOf(id) === -1){ hiddenIds.push(id); lsSet("fairy_hidden_v1", hiddenIds); } }
-  if(cart[id]){ delete cart[id]; lsSet("fairy_cart_v1", cart); }
-  renderMenu();
+  var sb = window.fairySb;
+  if(!sb) return;
+  var cr = ownerCreds() || {};
+  sb.rpc("fairy_delete_dish", {p_project: cr.project, p_code: cr.code, p_id: id}).then(function(res){
+    if(res.error){ toast("Erreur : " + res.error.message); return; }
+    if(cart[id]){ delete cart[id]; lsSet("fairy_cart_v1", cart); }
+    window.fairyReload();
+    toast(isAr() ? "الطبق تمسح" : "Plat supprimé");
+  });
 }
 function resetMenu(){
   if(!confirm(isAr() ? "ترجّع المنيو الأصلي كامل؟ (الأطباق اللي زدتها تتمحى)" : "Restaurer le menu d’origine ? (les plats ajoutés seront supprimés)")) return;
@@ -603,6 +667,8 @@ document.getElementById("menuGrid").addEventListener("click", function(e){
   var t = e.target;
   var del = t.closest ? t.closest("[data-del]") : null;
   if(del && ownerMode){ e.stopPropagation(); deleteDish(del.getAttribute("data-del")); return; }
+  var ed = t.closest ? t.closest("[data-edit]") : null;
+  if(ed && ownerMode){ e.stopPropagation(); openEdit(ed.getAttribute("data-edit")); return; }
   var cell = t.closest ? t.closest(".mcell") : null;
   if(cell) quickAdd(cell.getAttribute("data-id"));
 });
@@ -641,19 +707,31 @@ document.getElementById("langBtn").addEventListener("click", function(){ setTime
 document.getElementById("waBarBtn").addEventListener("click", function(e){ if(cartCount()){ e.preventDefault(); igOrder(); } });
 document.getElementById("waOrderBtn").addEventListener("click", function(e){ e.preventDefault(); igOrder(); });
 
-/* owner mode: 3 taps on the logo */
+/* owner mode: 4 taps on the logo — the code is asked once, then remembered */
 var logoTaps = 0, logoTimer = null;
 document.querySelector(".hero .logo").addEventListener("click", function(){
   logoTaps++;
   if(logoTimer) clearTimeout(logoTimer);
   logoTimer = setTimeout(function(){ logoTaps = 0; }, 1500);
-  if(logoTaps >= 3){
+  if(logoTaps >= 4){
     logoTaps = 0;
-    ownerMode = !ownerMode;
-    toast(ownerMode
-      ? (isAr() ? "وضع المالك مفعّل — تقدر تزيد وتمسح الأطباق" : "Mode propriétaire activé — vous pouvez ajouter / supprimer des plats")
-      : (isAr() ? "وضع المالك مطفي" : "Mode propriétaire désactivé"));
-    renderMenu();
+    if(ownerMode){
+      ownerMode = false;
+      document.getElementById("ownerBar").style.display = "none";
+      document.body.style.paddingTop = "0";
+      renderMenu();
+      toast(isAr() ? "وضع المالك مطفي" : "Mode propriétaire désactivé");
+      return;
+    }
+    var saved = ownerCreds();
+    if(saved && window.fairySb){
+      window.fairySb.rpc("fairy_check_code", {p_project: saved.project, p_code: saved.code}).then(function(res){
+        if(res.data === true) unlock(saved.project);
+        else openCodePrompt();
+      });
+      return;
+    }
+    openCodePrompt();
   }
 });
 
@@ -708,6 +786,94 @@ renderCartBar();
     sb.channel("fairy-settings").on("postgres_changes", {event:"*", schema:"public", table:"fairy_settings"}, function(){ window.fairyReload(); }).subscribe();
   }catch(e){}
 })();
+</script>
+<div class="ovl" id="codeOvl"><div class="sheet">
+  <button type="button" class="x" data-close>×</button>
+  <h3 class="popname">👑 FAIRY BAKERY</h3>
+  <p class="copynote"><span data-fr="Entre ton code pour modifier le menu" data-ar="دخل الكود باش تعدل المنيو">Entre ton code pour modifier le menu</span></p>
+  <div style="margin-top:14px">
+    <div class="fld"><label><span data-fr="Code" data-ar="الكود">Code</span></label><input id="ownCode" type="password" placeholder="••••••••"></div>
+    <div id="ownErr" class="copybox" style="display:none"></div>
+    <button type="button" class="btn-gold" id="ownLogin"><span data-fr="Entrer" data-ar="دخول">Entrer</span></button>
+  </div>
+</div></div>
+<div id="ownerBar" style="display:none"><span>👑 <span id="ownerWho"></span></span><span><button type="button" id="ownSettings">⚙️ Paramètres</button> <button type="button" id="ownLogout">Sortie</button></span></div>
+<div class="ovl" id="setOvl"><div class="sheet">
+  <button type="button" class="x" data-close>×</button>
+  <h3 class="popname">⚙️ Paramètres de la boutique</h3>
+  <div style="margin-top:14px">
+    <div class="fld"><label><span data-fr="Nom de la boutique" data-ar="اسم المحل">Nom de la boutique</span></label><input id="setName" type="text"></div>
+    <div class="fld"><label>Instagram</label><input id="setIg" type="text" placeholder="fairy_bakery_"></div>
+    <div class="fld"><label><span data-fr="Règles de commande (français — une par ligne)" data-ar="قواعد الطلب (بالفرنسية — وحدة في كل سطر)">Règles de commande (français — une par ligne)</span></label><textarea id="setRulesFr" rows="4"></textarea></div>
+    <div class="fld"><label><span data-fr="Règles de commande (arabe — une par ligne)" data-ar="قواعد الطلب (بالعربية — وحدة في كل سطر)">Règles de commande (arabe — une par ligne)</span></label><textarea id="setRulesAr" rows="4" dir="rtl"></textarea></div>
+    <button type="button" class="btn-gold" id="setSave"><span data-fr="Enregistrer" data-ar="سجّل">Enregistrer</span></button>
+  </div>
+</div></div>
+<script>
+/* owner mode, inside this same page: 4 taps on the logo, code asked once then remembered */
+var OWNER_PROJECT = "fairy bakery";
+function ownerCreds(){ try{ return JSON.parse(localStorage.getItem("fairy_owner_login") || "null"); }catch(e){ return null; } }
+function resizePhoto(file, cb){
+  var img = new Image();
+  img.onload = function(){
+    var max = 720, w = img.width, h = img.height;
+    if(w > max){ h = Math.round(h * max / w); w = max; }
+    var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    cv.getContext("2d").drawImage(img, 0, 0, w, h);
+    cv.toBlob(function(b){ cb(b || file); }, "image/jpeg", 0.85);
+  };
+  img.onerror = function(){ cb(file); };
+  img.src = URL.createObjectURL(file);
+}
+function openCodePrompt(){ document.getElementById("codeOvl").classList.add("open"); }
+function unlock(project){
+  closeOvls();
+  ownerMode = true;
+  document.getElementById("ownerBar").style.display = "flex";
+  document.getElementById("ownerWho").textContent = project;
+  document.body.style.paddingTop = "40px";
+  renderMenu();
+  toast(isAr() ? "مرحباً — تقدر تعدل المنيو دروك" : "Bienvenue — tu peux modifier le menu");
+}
+function showErr(msg){ var e = document.getElementById("ownErr"); e.style.display = "block"; e.textContent = msg; }
+document.getElementById("ownLogin").addEventListener("click", function(){
+  var code = document.getElementById("ownCode").value;
+  var sb = window.fairySb;
+  if(!code){ showErr("Écris le code."); return; }
+  if(!sb){ showErr("Supabase indisponible — vérifie ta connexion et recharge la page."); return; }
+  sb.rpc("fairy_check_code", {p_project: OWNER_PROJECT, p_code: code}).then(function(res){
+    if(res.error){ showErr(res.error.message); return; }
+    if(res.data === true){ localStorage.setItem("fairy_owner_login", JSON.stringify({project: OWNER_PROJECT, code: code})); unlock(OWNER_PROJECT); }
+    else showErr(isAr() ? "الكود غالط — عاود جرّب" : "Code incorrect — réessaie.");
+  });
+});
+document.getElementById("ownLogout").addEventListener("click", function(){ localStorage.removeItem("fairy_owner_login"); location.reload(); });
+document.getElementById("ownSettings").addEventListener("click", function(){
+  var s = window.fairySettings || {};
+  document.getElementById("setName").value = s.shop_name || "FAIRY BAKERY";
+  document.getElementById("setIg").value = s.instagram || "fairy_bakery_";
+  document.getElementById("setRulesFr").value = s.rules_fr || "";
+  document.getElementById("setRulesAr").value = s.rules_ar || "";
+  document.getElementById("setOvl").classList.add("open");
+});
+document.getElementById("setSave").addEventListener("click", function(){
+  var sb = window.fairySb;
+  if(!sb) return;
+  var row = {id:1, shop_name: document.getElementById("setName").value.replace(/^\s+|\s+$/g, "") || "FAIRY BAKERY",
+    instagram: document.getElementById("setIg").value.replace(/^\s+|\s+$/g, "") || "fairy_bakery_",
+    rules_fr: document.getElementById("setRulesFr").value, rules_ar: document.getElementById("setRulesAr").value};
+  var cr = ownerCreds() || {};
+  sb.rpc("fairy_upsert_settings", {p_project: cr.project, p_code: cr.code, p_settings: row}).then(function(res){
+    if(res.error){ toast("Erreur : " + res.error.message); return; }
+    closeOvls(); window.fairyReload();
+    toast(isAr() ? "الإعدادات تسجّلت ✅" : "Paramètres enregistrés ✅");
+  });
+});
+document.getElementById("addDelete").addEventListener("click", function(){
+  var id = document.getElementById("addId").value;
+  if(id){ closeOvls(); deleteDish(id); }
+});
+document.querySelectorAll("[data-close]").forEach(function(b){ b.addEventListener("click", closeOvls); });
 </script>
 </body>
 </html>
