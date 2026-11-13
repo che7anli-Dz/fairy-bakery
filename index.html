@@ -112,6 +112,7 @@
   .mname{font-size:13.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .mdesc{font-size:11.5px;line-height:1.4;color:#6E5F52;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .mprice{font-size:11.5px;font-weight:800;color:#fff;background:#7A5C43;border-radius:99px;padding:2px 7px;white-space:nowrap;margin-top:auto}
+  .mprice,.sprice{direction:ltr;unicode-bidi:isolate}
   .mplus{position:absolute;top:8px;inset-inline-end:8px;width:26px;height:26px;border-radius:50%;border:1.5px solid #E8DFD2;background:rgba(10,15,12,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#E8DFD2;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;line-height:1}
   .mdel{position:absolute;top:-8px;inset-inline-end:auto;inset-inline-start:-8px;width:24px;height:24px;border-radius:50%;background:#C0392B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;z-index:2;line-height:1}
   .madd{display:block;width:calc(100% - 40px);margin:12px 20px 0;border:1.5px dashed #E8A317;background:transparent;color:#E8A317;border-radius:12px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit}
@@ -269,7 +270,7 @@ var hiddenIds = lsGet("fairy_hidden_v1", []);
 var ownerMode = false;
 
 function isAr(){ return document.documentElement.lang === "ar"; }
-function fmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+function fmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0"); }
 var BOXES = [
   {id:"box-dimanche", fr:"Box Dimanche", ar:"بوكس الأحد", price:1000},
   {id:"box-lundi", fr:"Box Lundi", ar:"بوكس الاثنين", price:1000},
