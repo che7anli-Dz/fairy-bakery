@@ -99,19 +99,21 @@
   footer a{color:#E8A317;text-decoration:none;font-weight:700}
   /* ===== v8: interactive menu ===== */
   #menuGrid{padding-bottom:18px}
-  .mcat{font-family:Georgia,'Times New Roman',serif;font-size:19px;color:#E8A317;margin:16px 20px 10px}
+  .mcat{font-family:Georgia,'Times New Roman',serif;font-size:19px;color:#E8A317;margin:16px 20px 10px;display:flex;align-items:center;gap:10px}
+  .mcat::after{content:"";flex:1;border-top:2px dotted rgba(232,163,23,.55)}
   .mcat:first-child{margin-top:4px}
-  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 4px}
-  .mcell{position:relative;display:flex;align-items:center;gap:10px;background:#101B14;border:1px solid #2A3D31;border-radius:14px;padding:10px;cursor:pointer;color:#F2EFE6;font:inherit;text-align:start;width:100%}
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 20px 4px}
+  .mcell{position:relative;display:flex;flex-direction:column;align-items:stretch;background:rgba(16,27,20,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(232,163,23,.45);border-radius:14px;padding:0;overflow:hidden;cursor:pointer;color:#F2EFE6;font:inherit;text-align:start;width:100%}
   .mcell:active{transform:scale(.98)}
   .mthumb{position:relative;flex:none}
-  .mthumb img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #E8A317;display:block}
-  .mqty{position:absolute;bottom:-5px;inset-inline-end:-5px;background:#E8A317;color:#0A0F0C;font-size:11px;font-weight:800;border-radius:99px;padding:1px 6px;border:2px solid #101B14;line-height:1.4}
-  .mbody{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
-  .mname{font-size:13.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  .mprice{font-size:11.5px;font-weight:800;color:#0A0F0C;background:#E8A317;border-radius:99px;padding:2px 7px;white-space:nowrap}
-  .mplus{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid #E8A317;color:#E8A317;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;line-height:1}
-  .mdel{position:absolute;top:-8px;inset-inline-end:-8px;width:24px;height:24px;border-radius:50%;background:#C0392B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;z-index:2;line-height:1}
+  .mthumb img{width:100%;height:118px;object-fit:cover;display:block}
+  .mqty{position:absolute;bottom:8px;inset-inline-end:8px;background:#E8A317;color:#0A0F0C;font-size:11px;font-weight:800;border-radius:99px;padding:1px 6px;border:2px solid #101B14;line-height:1.4}
+  .mbody{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 12px 12px}
+  .mname{font-size:13.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .mdesc{font-size:11.5px;line-height:1.4;color:#C9D4CC;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .mprice{font-size:11.5px;font-weight:800;color:#0A0F0C;background:#E8A317;border-radius:99px;padding:2px 7px;white-space:nowrap;margin-top:auto}
+  .mplus{position:absolute;top:8px;inset-inline-end:8px;width:26px;height:26px;border-radius:50%;border:1.5px solid #E8A317;background:rgba(10,15,12,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#E8A317;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;line-height:1}
+  .mdel{position:absolute;top:-8px;inset-inline-end:auto;inset-inline-start:-8px;width:24px;height:24px;border-radius:50%;background:#C0392B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;z-index:2;line-height:1}
   .madd{display:block;width:calc(100% - 40px);margin:12px 20px 0;border:1.5px dashed #E8A317;background:transparent;color:#E8A317;border-radius:12px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit}
   .mreset{display:block;width:calc(100% - 40px);margin:10px 20px 4px;border:0;background:transparent;color:#A8B8AC;font-size:13px;cursor:pointer;text-decoration:underline;font-family:inherit}
   .ovl{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:90;display:none;align-items:flex-end;justify-content:center}
@@ -239,21 +241,21 @@ var CATS = [
 ];
 
 var DISHES = [
-  {id:"chou-maki", cat:"maki", fr:"CHOU-MAKI", ar:"شو ماكي", price:800},
-  {id:"maki-thon", cat:"maki", fr:"MAKI THON", ar:"ماكي تونة", price:800},
-  {id:"maki-surimi", cat:"maki", fr:"MAKI SURIMI", ar:"ماكي سوريمي", price:800},
-  {id:"viggie-maki", cat:"maki", fr:"VIGGIE MAKI", ar:"ماكي خضرة", price:500},
-  {id:"spicy-crab", cat:"california", fr:"Spicy Crab", ar:"سبايسي كراب", price:1000},
-  {id:"tuna-roll", cat:"california", fr:"Tuna Roll", ar:"تونة رول", price:1000},
-  {id:"tex-mex", cat:"california", fr:"TEX-MEX", ar:"تكس مكس", price:1000},
-  {id:"ebi-fry", cat:"california", fr:"EBI FRY", ar:"إيبي فراي", price:1500},
-  {id:"fresh-salmon", cat:"california", fr:"Fresh Salmon", ar:"سلمون طازج", price:1600},
-  {id:"sunny-roll", cat:"rolls", fr:"Sunny Roll", ar:"صاني رول", price:1100},
-  {id:"paradise-roll", cat:"rolls", fr:"Paradise Roll", ar:"بارادايس رول", price:1200},
-  {id:"volcano", cat:"rolls", fr:"Volcano", ar:"فولكانو", price:900},
-  {id:"hoso-saumon", cat:"hosomaki", fr:"Saumon", ar:"سلمون", price:700},
-  {id:"hoso-thon", cat:"hosomaki", fr:"Thon épicé", ar:"تونة حارة", price:600},
-  {id:"hoso-avocat", cat:"hosomaki", fr:"Avocat, Fromage", ar:"أفوكادو وجبن", price:600}
+  {id:"chou-maki", cat:"maki", fr:"CHOU-MAKI", ar:"شو ماكي", price:800, desc:"Choux roll, thon cuit, mayonnaise, concombre, cheese"},
+  {id:"maki-thon", cat:"maki", fr:"MAKI THON", ar:"ماكي تونة", price:800, desc:"Algue, thon cuit, concombre, mayonnaise, cheese"},
+  {id:"maki-surimi", cat:"maki", fr:"MAKI SURIMI", ar:"ماكي سوريمي", price:800, desc:"Algue, Surimi, concombre, mayonnaise, cheese"},
+  {id:"viggie-maki", cat:"maki", fr:"VIGGIE MAKI", ar:"ماكي خضرة", price:500, desc:"Carottes, concombre, mayonnaise"},
+  {id:"spicy-crab", cat:"california", fr:"Spicy Crab", ar:"سبايسي كراب", price:1000, desc:"Surimi épicé, tomago, concombre, garniture Shichimi"},
+  {id:"tuna-roll", cat:"california", fr:"Tuna Roll", ar:"تونة رول", price:1000, desc:"Thon épicé, avocat, concombre"},
+  {id:"tex-mex", cat:"california", fr:"TEX-MEX", ar:"تكس مكس", price:1000, desc:"Poulet pané, avocat, pink sauce"},
+  {id:"ebi-fry", cat:"california", fr:"EBI FRY", ar:"إيبي فراي", price:1500, desc:"Crevette tempura, avocat, concombre"},
+  {id:"fresh-salmon", cat:"california", fr:"Fresh Salmon", ar:"سلمون طازج", price:1600, desc:"Saumon, avocat, fromage"},
+  {id:"sunny-roll", cat:"rolls", fr:"Sunny Roll", ar:"صاني رول", price:1100, desc:"Saumon, avocat, concombre, tamago, mayonnaise japonaise"},
+  {id:"paradise-roll", cat:"rolls", fr:"Paradise Roll", ar:"بارادايس رول", price:1200, desc:"Saumon, fromage, avocat, ananas, tamago"},
+  {id:"volcano", cat:"rolls", fr:"Volcano", ar:"فولكانو", price:900, desc:"Thon épicé, avocat, carotte, tamago, mayonnaise japonaise, oignons frits"},
+  {id:"hoso-saumon", cat:"hosomaki", fr:"Saumon", ar:"سلمون", price:700, desc:""},
+  {id:"hoso-thon", cat:"hosomaki", fr:"Thon épicé", ar:"تونة حارة", price:600, desc:""},
+  {id:"hoso-avocat", cat:"hosomaki", fr:"Avocat, Fromage", ar:"أفوكادو وجبن", price:600, desc:""}
 ];
 
 var WA_NUMBER = "213000000000";
@@ -321,6 +323,7 @@ function renderMenu(){
         + (cart[d.id] ? '<span class="mqty">×' + cart[d.id] + '</span>' : '')
         + '</span>'
         + '<span class="mbody"><span class="mname">' + esc(dishName(d)) + '</span>'
+        + (d.desc ? '<span class="mdesc">' + esc(d.desc) + '</span>' : '')
         + '<span class="mprice">' + esc(priceText(d)) + '</span></span>'
         + '<span class="mplus">+</span>'
         + (ownerMode ? '<span class="mdel" data-del="' + d.id + '">×</span>' : '')
