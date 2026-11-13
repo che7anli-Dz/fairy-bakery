@@ -686,10 +686,8 @@ renderCartBar();
     window.fairySettings = s;
     var ul = document.getElementById("rulesList");
     if(ul && s.rules_fr){
-      var fr = s.rules_fr.split(/
-+/).filter(function(x){ return x.trim(); });
-      var ar = (s.rules_ar || "").split(/
-+/).filter(function(x){ return x.trim(); });
+      var fr = s.rules_fr.split(/\n+/).filter(function(x){ return x.trim(); });
+      var ar = (s.rules_ar || "").split(/\n+/).filter(function(x){ return x.trim(); });
       var html = "";
       for(var i = 0; i < fr.length; i++){
         var a = ar[i] || fr[i];
